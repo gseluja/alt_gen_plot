@@ -2,7 +2,7 @@
 .coverage
 .ipynb_checkpoints
 .DS_Store
-raw_data/
+raw_data/trained_model.pt
 *.csv
 **/__pycache__/
 .env
