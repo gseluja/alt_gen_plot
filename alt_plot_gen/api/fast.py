@@ -91,7 +91,7 @@ def preprocess_2(dataseries):
 
     return plot_tokenized
 
-app.state.model = load_model()
+#app.state.model = load_model()
 
 @app.get("/generated")
 def generated(title: str, release_year: int):
