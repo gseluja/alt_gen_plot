@@ -6,7 +6,7 @@ import pandas as pd
 import os
 import torch
 from alt_plot_gen.ml_logic.data import clean_data, clean_plot
-from alt_plot_gen.ml_logic.registry import load_model
+#from alt_plot_gen.ml_logic.registry import load_model
 from alt_plot_gen.ml_logic.params import LOCAL_DATA_PATH
 from transformers import GPT2Tokenizer
 from fastapi import FastAPI
@@ -15,6 +15,8 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 from alt_plot_gen.ml_logic.generation import generate
 
+
+from alt_plot_gen.interface.main import text_generation
 # $WIPE_END'''
 
 app = FastAPI()
@@ -40,19 +42,11 @@ app.add_middleware(
 #define a new clean_data function
 def clean_data_2(dataseries):
 
-    # Clean Plot column
-    dataseries['Plot'] = dataseries['Plot'].apply(clean_plot)
-
-
     # Cut plot wuth more than 1024 tokens to adapt to gpt-2 medium limitations
     dataseries['Plot'] = dataseries['Plot'].map(lambda x: " ".join(x.split()[:350]))  #cut all plots until the 350th word
-
-
-    #For the test set only, keep last 50 words in a new column, then remove them from original column
-    dataseries['True_end_plot'] = dataseries['Plot'].str.split().str[-50:].apply(' '.join)
     dataseries['Plot'] = dataseries['Plot'].str.split().str[:-50].apply(' '.join)
-
     return dataseries
+
 #define a new tokenizer function
 def tokenize_plots_2(dataseries):
     class Token_plot(Dataset):
@@ -93,21 +87,41 @@ def preprocess_2(dataseries):
 
 #app.state.model = load_model()
 
-@app.get("/generated")
-def generated(title: str, release_year: int):
+@app.get("/index")
+def index():
+    pass
 
-    dataset = pd.read_csv(f'{LOCAL_DATA_PATH}/wiki_movie_plots_deduped.csv')
+def select_model_by_genre(genre):
+    if not genre:
+        model = "trained_model.pt"
+    else:
+        model = f"trained_{genre}.pt"
+    return os.path.join(os.environ.get("LOCAL_DATA_PATH"), model)
 
-    for movie in dataset:
-        locate_plot = dataset.loc[(dataset['Title'] == title) & (dataset['Release Year'] == release_year)]
-        selected_plot = locate_plot['Plot'].values[0]
+@app.get("/generate_new_end")
+def generate_new_end(title: str, release_year: int, genre=None):
 
-    plot_preproc = preprocess_2(locate_plot)
+    dataset = pd.read_csv(f'{LOCAL_DATA_PATH}/test_set_demo.csv')
+
+    locate_plot = dataset.loc[(dataset['Title'] == title) & (dataset['Release Year'] == release_year)]
+    selected_plot = locate_plot['Plot'].values[0]
+
+    #plot_preproc = preprocess_2(selected_plot)
+
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-    model = app.state.model
+
+    #plot_cleaned = clean_data_2(selected_plot)
+
+    #plot = 'young raj malhotra (akshay kumar) lives with his elder brother, rohit, his sister-in-law, kiran, and his niece. after an accident fractures his leg, he is unable to walk for some time. due to psychological reasons, he cannot walk even after the fracture heals. when the malhotras move to dehra dun, raj befriends their neighbour, young tomboy kajal (lara dutta), as both share a common passion for aeroplanes. kajal encourages raj to walk, and he succeeds. years later the two continue to be fast friends, and everyone expects them to marry soon. raj secretly loves kajal and is waiting for the right time to propose to her. however, kajal sees him only as her best friend. raj is recruited by the indian air force and goes for training for a year and a half. after his training is over, he rushes to kajal to propose to her, only to find out that she is in love with multimillionaire businessman, karan singhania (aman verma). raj tells kajal that karan is the best life partner for her, and does not reveal his true feelings. kajal and karan get married and during the reception party, kajal comes to know of raj feelings for her. hurt by the fact that she did not see his feelings for her despite being raj best friend, kajal asks him to move on with his life. thereafter the malhotras move to nainital, and raj relocates to cape town, south africa for training. during a visit to a club, raj meets the vivacious and fun-loving jiya (priyanka chopra). jiya falls in love with raj due to his clean personality, but raj is unable to forget kajal. after completing his training, raj goes back to india where he finds that jiya has already arrived and is living as a paying guest'
+    #plot_tokenized = tokenizer.encode(plot)
+
+    model_path = select_model_by_genre(genre)
+    model = torch.load(model_path)
 
     #Run the functions to generate the alternative endings
-    generated_plot = generate(model, tokenizer, plot_preproc, entry_count=10, entry_length=60, #maximum number of words
-    top_p=0.8, temperature=1.)
+    alternative_end, full_test_generated_plot = text_generation(model, tokenizer, selected_plot)
+    #generated_plot = generate(model, tokenizer, plot_tokenized, entry_count=1, entry_length=30, #maximum number of words
+    #top_p=0.8, temperature=1.)
 
-    return generated_plot[-1]
+    #return alternative_end[-1]
+    return alternative_end

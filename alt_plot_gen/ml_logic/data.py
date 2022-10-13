@@ -43,8 +43,6 @@ def clean_data():
     # Import df_raw
     df_raw = import_dataset()
 
-    df_raw = df_raw
-
     # Clean Plot column
     df_raw['Plot'] = df_raw['Plot'].apply(clean_plot)
 
