@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 from transformers import GPT2Tokenizer
 import torch
-from torch.utils.data import Dataset, DataLoader
-
-#from alt_plot_gen.ml_logic.utils import simple_time_and_memory_tracker
+from torch.utils.data import Dataset
 
 
 def tokenize_plots(df: pd.DataFrame) -> np.ndarray:
