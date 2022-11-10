@@ -1,39 +1,10 @@
-# packaging
-pip>=9
-setuptools>=26
-twine
-wheel>=0.29
-
-# data science
-numpy
-pandas
-scikit-learn
-torch
-transformers
-tqdm
-
-# tests/linter
-black
-coverage
-flake8
-pytest
-yapf
-
-# API
-# gcsfs
-# google-cloud-storage
-# mlflow
-# s3fs
-
-# utilities
-six>=1.14
-joblib
-memoized-property
-termcolor
-
-# API
-fastapi
-pytz
-uvicorn
-
-#alt_plot_gen
+fastapi==0.85.0
+numpy==1.23.3
+pandas==1.4.4
+pytz==2022.2.1
+regex==2022.9.13
+requests==2.28.1
+torch==1.12.1
+tqdm==4.64.1
+transformers==4.22.0
+uvicorn==0.18.3

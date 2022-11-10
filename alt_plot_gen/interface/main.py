@@ -2,12 +2,14 @@
 #                                      DATASET_SIZE,
 #                                      VALIDATION_DATASET_SIZE)
 
-from alt_plot_gen.ml_logic.data import clean_data
+from alt_plot_gen.ml_logic.data import clean_data, split_dataset
 #from alt_plot_gen.ml_logic.preprocessor import preprocess_features
 from alt_plot_gen.ml_logic.generation import generate
 from alt_plot_gen.ml_logic.encoders import tokenize_plots
 from alt_plot_gen.ml_logic.model import get_pretrained, train
-#from alt_plot_gen.ml_logic.registry import load_model, save_model
+
+import os
+from alt_plot_gen.ml_logic.params import LOCAL_DATA_PATH, CSV_TEST_FILE
 
 def preprocess():
     """
@@ -18,19 +20,25 @@ def preprocess():
     """
     print("\n⭐️ use case: preprocess")
 
-    df, test_set = clean_data()
+    df = clean_data()
 
-    cleaned_row_count = len(df)
+    train_set, test_set = split_dataset(df)
+    # save test set to be used in website
+    test_set_file = os.path.join(LOCAL_DATA_PATH, CSV_TEST_FILE)
+
+    test_set.to_csv(test_set_file, index = False)
+
+    cleaned_row_count = len(train_set)
 
     print(f"\n✅ data processed: ({cleaned_row_count} cleaned)")
 
     #df = preprocess_features(df)
 
-    dataset = tokenize_plots(df)  #list of tensors (tokenized plots) #all genres
+    train_set_token = tokenize_plots(train_set)  #list of tensors (tokenized plots) #all genres
 
     print(f"\n✅ data tokenized")
 
-    return dataset, test_set
+    return train_set_token, test_set
 
 
 def build_train_model(dataset):
@@ -59,42 +67,21 @@ def build_train_model(dataset):
     return model, tokenizer
 
 
-# save model
-'''
-params = dict(
-    # model parameters
-    batch_size=16,
-    epochs=5
-    lr=2e-5
-    max_seq_len=400
-    warmup_steps=200
-
-    # data source
-    #training_set_size=DATASET_SIZE,
-    #val_set_size=VALIDATION_DATASET_SIZE,
-    #row_count=row_count
-    )
-#save_model(model=model, params=params)  #, metrics=dict(mae=val_mae)
-'''
-
-#Function to generate multiple sentences
+# Generate multiple sentences
 def text_generation(model, tokenizer, test_data):
-    #generated_plots = []
-    #for i in range(len(test_data)):
+    entry_length = 60
+    x = generate(model, tokenizer, test_data, entry_count=1, entry_length=entry_length, top_p=0.8, temperature=1.)
 
-    x = generate(model, tokenizer, test_data, entry_count=1)  #top_p=0.8, temperature=1.
-
-    #generated_plots.append(x)
-
+    print(x)
     print(f"\n✅ generation created")
 
-    #show only generated text
-    a = test_data.split()[-200:] #Get the matching string we want (200 words)
+    # Show only generated text
+    a = test_data.split()[-10:] # Get the matching string we want
     b = ' '.join(a)
-    c = ' '.join(x) #Get all that comes after the matching string
+    c = ' '.join(x) # Get all that comes after the matching string
     my_generation = c.split(b)[-1]
 
-    #Finish the sentences when there is a point, remove after that
+    # Finish the sentences when there is a point, remove after that
     just_alternative =[]
     to_remove = my_generation.split('.')[-1]
     just_alternative = my_generation.replace(to_remove,'')
@@ -103,24 +90,4 @@ def text_generation(model, tokenizer, test_data):
 
 
 if __name__ == '__main__':
-
-    dataset, test_set = preprocess()
-    model, tokenizer = build_train_model(dataset)
-
-    #select plot you want an alternative ending of
-    #index (from 0 to 200) of the movie you want to test (set input_raw you want to ask the user to insert from console)
-    i = 100
-    selected_plot = test_set['Plot'][i]  #take the 100th of the test set as example
-
-    #Run the functions to generate the alternative endings
-    alternative_end, full_test_generated_plot = text_generation(model, tokenizer, selected_plot)
-
-    #print results
-    print('\n ✅ Base Plot: ')
-    print(selected_plot)
-    print('\n ✅ True end: ')
-    print(test_set['True_end_plot'][i])
-    print('\n ✅ Alternative end: ')
-    print(alternative_end)
-    print('\n ✅ Full plot with alternative ending: ')
-    print(full_test_generated_plot)
+    pass

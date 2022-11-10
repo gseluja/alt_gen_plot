@@ -1,4 +1,7 @@
-from alt_plot_gen.data_sources.local_disk import import_dataset
+from ast import Pass
+from alt_plot_gen.data_sources.local_disk import import_local_dataset
+from alt_plot_gen.data_sources.cloud_storage import import_cloud_dataset
+from alt_plot_gen.ml_logic.params import DATA_SOURCE
 import regex as re
 
 
@@ -38,10 +41,12 @@ def clean_plot(plot):
 def clean_data():
     """
     clean raw data by removing buggy or irrelevant plots
-    or columns for the training set
     """
     # Import df_raw
-    df_raw = import_dataset()
+    if DATA_SOURCE == 'local':
+        df_raw = import_local_dataset()
+    else:
+        df_raw = import_cloud_dataset()
 
     # Clean Plot column
     df_raw['Plot'] = df_raw['Plot'].apply(clean_plot)
@@ -49,21 +54,51 @@ def clean_data():
     # Harmonize Genre
     df = harmonize_genre(df_raw)
 
-    # Cut plot wuth more than 1024 tokens to adapt to gpt-2 medium limitations
+    '''
+    # Cut plot with more than 1024 tokens to adapt to gpt-2 medium limitations
     df['Plot'] = df['Plot'].map(lambda x: " ".join(x.split()[:350]))  #cut all plots until the 350th word
 
-    #Create a very small test set to compare generated text with the reality
-    test_set = df.sample(n = 200)
-    df = df.loc[~df.index.isin(test_set.index)]
-
-    #Reset the indexes
-    test_set = test_set.reset_index()
-    df = df.reset_index()
     #For the test set only, keep last 50 words in a new column, then remove them from original column
     test_set['True_end_plot'] = test_set['Plot'].str.split().str[-50:].apply(' '.join)
     test_set['Plot'] = test_set['Plot'].str.split().str[:-50].apply(' '.join)
 
     return df, test_set
+    '''
+    return df
+
+#-----------------
+
+def split_dataset(df, set_size):
+    '''
+    Return two sets, one for training and the other for testing
+    '''
+    test_set = df.sample(n = set_size)
+    train_set = df.loc[~df.index.isin(test_set.index)]
+
+    test_set.reset_index(inplace=True)
+    train_set.reset_index(inplace=True)
+
+    return train_set, test_set
+
+
+def split_plot(df, end_plot_percentage):
+    '''
+    Keep last words in new column according to a percentage, then remove them from original column
+    '''
+    true_end_plot = lambda x: " ".join(x.split()[:round(len(x.split())*end_plot_percentage/100)])
+    df['True_end_plot'] = df['Plot'].map(true_end_plot)
+
+    begin_plot = lambda x: " ".join(x.split()[:round(len(x.split())*(1-end_plot_percentage/100))])
+    df['Plot'] = df['Plot'].map(begin_plot)
+
+
+def trim_plot(df, max_plot_length):
+    '''
+    Cut plot with more than 1024 tokens to adapt to gpt-2 medium limitations
+    '''
+    df['Plot'] = df['Plot'].map(lambda x: " ".join(x.split()[:max_plot_length]))  #cut all plots until the max_plot_length word
+
+#-----------------
 
 
 def harmonize_genre(movies):

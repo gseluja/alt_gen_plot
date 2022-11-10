@@ -4,17 +4,21 @@ load and validate the environment variables in the `.env`
 """
 
 import os
-#import numpy as np
 
-DATASET_SIZE = os.environ.get("DATASET_SIZE")
-VALIDATION_DATASET_SIZE = os.environ.get("VALIDATION_DATASET_SIZE")
+#DATASET_SIZE = os.environ.get("DATASET_SIZE")
+#VALIDATION_DATASET_SIZE = os.environ.get("VALIDATION_DATASET_SIZE")
 #CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
+#LOCAL_REGISTRY_PATH = os.path.expanduser(os.environ.get("LOCAL_REGISTRY_PATH"))
 LOCAL_DATA_PATH = os.path.expanduser(os.environ.get("LOCAL_DATA_PATH"))
-LOCAL_REGISTRY_PATH = os.path.expanduser(os.environ.get("LOCAL_REGISTRY_PATH"))
+GOOGLE_APPLICATION_CREDENTIALS = os.path.expanduser(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"))
 PROJECT = os.environ.get("PROJECT")
+BUCKET_NAME = os.environ.get("BUCKET_NAME")
+DATA_SOURCE = os.environ.get("DATA_SOURCE")
 DATASET = os.environ.get("DATASET")
+CSV_TEST_FILE = os.environ.get("CSV_TEST_FILE")
+CSV_FILE = os.environ.get("CSV_FILE")
 
-
+'''
 # Use this to optimize loading of raw_data with headers: pd.read_csv(..., dtypes=..., headers=True)
 DTYPES_RAW_OPTIMIZED = {
     "release_year": "int8",
@@ -39,10 +43,7 @@ DTYPES_RAW_OPTIMIZED_HEADLESS = {
     7: "O"
 }
 
-'''
 DTYPES_PROCESSED_OPTIMIZED = np.float32
-
-
 
 ################## VALIDATIONS #################
 
